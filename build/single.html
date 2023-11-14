@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Use the title from a page's frontmatter if it has one -->
+    <title>Middleman</title>
+    <link href="/stylesheets/site.css" rel="stylesheet" />
+    <script src="/javascripts/site.js"></script>
+  </head>
+  <body>
+    <nav style="display: flex">
+      <li>
+        <a href="/">
+          Batch converter
+        </a>
+      </li>
+      <li>
+        <a href="/single.html">
+          Single converter
+        </a>
+      </li>
+      <li>
+        <a href="/test.html">
+          Batch test
+        </a>
+      </li>
+      <li>
+        <a href="/single-test.html">
+          Single test
+        </a>
+      </li>
+    </nav>
+    <script>
+  function reformatSVG(svgString) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgString, "image/svg+xml");
+
+        // Find the last path element, assuming it's the single path
+        const allPaths = doc.querySelectorAll('path');
+        const secondaryPath = allPaths[allPaths.length - 1];
+
+        // Select the preceding sibling which should be a group <g> of paths
+        const primaryPathsGroup = secondaryPath.previousElementSibling;
+        const primaryPaths = primaryPathsGroup.querySelectorAll('path');
+        let primaryPathsD = Array.from(primaryPaths).map(path => `<path d="${path.getAttribute('d')}"/>`).join('');
+
+        const secondaryPathD = secondaryPath.getAttribute('d');
+
+        // Creating a temporary SVG element to calculate path length
+        const tempSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        const tempPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        tempPath.setAttribute("d", secondaryPathD);
+        tempSvg.appendChild(tempPath);
+        document.body.appendChild(tempSvg);
+        const length = tempPath.getTotalLength();
+        document.body.removeChild(tempSvg);
+
+        const newSVG = `
+            <svg xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <mask id="path-mask">
+                  <g fill="white">
+                    ${primaryPathsD}
+                  </g>
+                </mask>
+              </defs>
+              <path class="mask" d="${secondaryPathD}"
+                    mask="url(#path-mask)" stroke="black" stroke-width="2" fill="none"
+                    stroke-dasharray="${length}" stroke-dashoffset="${length}">
+              </path>
+            </svg>
+        `;
+
+        return newSVG;
+    }
+
+function processSVG() {
+  const inputSVG = document.getElementById('input-svg').value;
+  const outputSVG = reformatSVG(inputSVG);
+  document.getElementById('output-svg').value = outputSVG;
+}
+</script>
+
+<h2>SVG Formatter</h2>
+<div>
+  <textarea id="input-svg" rows="10" cols="30" placeholder="Paste source SVG here"></textarea>
+  <button onclick="processSVG()">Format SVG</button>
+  <textarea id="output-svg" rows="10" cols="30" placeholder="Formatted SVG will appear here"></textarea>
+</div>
+  </body>
+</html>

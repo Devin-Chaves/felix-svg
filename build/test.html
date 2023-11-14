@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Use the title from a page's frontmatter if it has one -->
+    <title>Middleman</title>
+    <link href="/stylesheets/site.css" rel="stylesheet" />
+    <script src="/javascripts/site.js"></script>
+  </head>
+  <body>
+    <nav style="display: flex">
+      <li>
+        <a href="/">
+          Batch converter
+        </a>
+      </li>
+      <li>
+        <a href="/single.html">
+          Single converter
+        </a>
+      </li>
+      <li>
+        <a href="/test.html">
+          Batch test
+        </a>
+      </li>
+      <li>
+        <a href="/single-test.html">
+          Single test
+        </a>
+      </li>
+    </nav>
+    <style>
+    .svg-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 10px;
+    }
+
+    .svg-item {
+        border: 1px solid #ccc;
+        padding: 10px;
+        text-align: center;
+    }
+
+    svg {
+        max-width: 100%;
+        height: auto;
+        overflow: visible;
+    }
+</style>
+
+<input type="file" id="fileInput" multiple accept=".svg" onchange="loadSVGs()">
+<div id="svgGrid" class="svg-container"></div>
+
+<script>
+    function loadSVGs() {
+        const files = document.getElementById('fileInput').files;
+        const svgGrid = document.getElementById('svgGrid');
+        svgGrid.innerHTML = ''; // Clear previous SVGs
+
+        loadSVG(files, 0, svgGrid);
+    }
+
+    function loadSVG(files, index, svgGrid) {
+        if (index >= files.length) return; // Stop when all files are processed
+
+        const file = files[index];
+        const reader = new FileReader();
+        reader.onload = function (event) {
+            const div = document.createElement('div');
+            div.classList.add('svg-item');
+            div.innerHTML = `
+                <div>${file.name}</div>
+                ${event.target.result}
+                <button onclick="playAnimation(this)">Play Animation</button>
+            `;
+            svgGrid.appendChild(div);
+
+            // Initialize animation with delay
+            setTimeout(() => initializeAnimation(div), 100);
+
+            // Process the next file after a delay
+            setTimeout(() => loadSVG(files, index + 1, svgGrid), 200);
+        };
+        reader.readAsText(file);
+    }
+
+    function initializeAnimation(svgItem) {
+        const paths = svgItem.querySelectorAll('.mask'); // Adjust the selector as needed
+        paths.forEach(path => {
+            const length = path.getTotalLength();
+            path.style.strokeDasharray = length;
+            path.style.strokeDashoffset = length;
+        });
+    }
+
+    function playAnimation(button) {
+        const svgItem = button.parentElement;
+        const paths = svgItem.querySelectorAll('.mask'); // Adjust the selector as needed
+
+        paths.forEach(path => {
+            // Reset animation
+            path.style.transition = 'none';
+            path.style.strokeDashoffset = path.getTotalLength();
+            void path.offsetWidth; // Trigger reflow
+
+            // Start animation
+            setTimeout(() => {
+                path.style.transition = 'stroke-dashoffset 0.4s ease-in';
+                path.style.strokeDashoffset = '0';
+            }, 10);
+        });
+    }
+
+
+</script>
+
+
+  </body>
+</html>

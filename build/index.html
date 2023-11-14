@@ -1,0 +1,121 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Use the title from a page's frontmatter if it has one -->
+    <title>Welcome to Middleman</title>
+    <link href="/stylesheets/site.css" rel="stylesheet" />
+    <script src="/javascripts/site.js"></script>
+  </head>
+  <body>
+    <nav style="display: flex">
+      <li>
+        <a href="/">
+          Batch converter
+        </a>
+      </li>
+      <li>
+        <a href="/single.html">
+          Single converter
+        </a>
+      </li>
+      <li>
+        <a href="/test.html">
+          Batch test
+        </a>
+      </li>
+      <li>
+        <a href="/single-test.html">
+          Single test
+        </a>
+      </li>
+    </nav>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+<script>
+    function reformatSVG(svgString) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgString, "image/svg+xml");
+
+        // Find the last path element, assuming it's the single path
+        const allPaths = doc.querySelectorAll('path');
+        const secondaryPath = allPaths[allPaths.length - 1];
+
+        // Select the preceding sibling which should be a group <g> of paths
+        const primaryPathsGroup = secondaryPath.previousElementSibling;
+        const primaryPaths = primaryPathsGroup.querySelectorAll('path');
+        let primaryPathsD = Array.from(primaryPaths).map(path => `<path d="${path.getAttribute('d')}"/>`).join('');
+
+        const secondaryPathD = secondaryPath.getAttribute('d');
+
+        // Creating a temporary SVG element to calculate path length
+        const tempSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        const tempPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        tempPath.setAttribute("d", secondaryPathD);
+        tempSvg.appendChild(tempPath);
+        document.body.appendChild(tempSvg);
+        const length = tempPath.getTotalLength();
+        document.body.removeChild(tempSvg);
+
+        const newSVG = `
+            <svg xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <mask id="path-mask">
+                  <g fill="white">
+                    ${primaryPathsD}
+                  </g>
+                </mask>
+              </defs>
+              <path class="mask" d="${secondaryPathD}"
+                    mask="url(#path-mask)" stroke="black" stroke-width="2" fill="none"
+                    stroke-dasharray="${length}" stroke-dashoffset="${length}">
+              </path>
+            </svg>
+        `;
+
+        return newSVG;
+    }
+
+
+    function handleFiles() {
+        const files = document.getElementById('fileInput').files;
+        const zip = new JSZip();
+
+        Array.from(files).forEach((file, index, array) => {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const formattedSVG = reformatSVG(event.target.result);
+                zip.file(file.name.replace('.svg', '_converted.svg'), formattedSVG);
+
+                // When all files are processed, generate the ZIP file
+                if (index === array.length - 1) {
+                    zip.generateAsync({type: "blob"})
+                       .then(function(content) {
+                           saveAs(content, "converted_svgs.zip");
+                       });
+                }
+            };
+            reader.readAsText(file);
+        });
+    }
+
+
+    function saveAs(blob, filename) {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+
+<div>
+    <input type="file" id="fileInput" multiple accept=".svg">
+    <button onclick="handleFiles()">Convert and Download</button>
+</div>
+
+  </body>
+</html>
