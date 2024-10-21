@@ -27,17 +27,18 @@ title: Welcome to Middleman
         const length = tempPath.getTotalLength();
         document.body.removeChild(tempSvg);
 
+        let maskId = crypto.randomUUID();
         const newSVG = `
             <svg xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <mask id="path-mask">
+                <mask id="${maskId}">
                   <g fill="white">
                     ${primaryPathsD}
                   </g>
                 </mask>
               </defs>
               <path class="mask" d="${secondaryPathD}"
-                    mask="url(#path-mask)" stroke="black" stroke-width="2" fill="none"
+                    mask="url(#${maskId})" stroke="black" stroke-width="2" fill="none"
                     stroke-dasharray="${length}" stroke-dashoffset="${length}">
               </path>
             </svg>
